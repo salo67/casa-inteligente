@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0d1220">
+<title>La casa inteligente</title>
+<style>
+:root{--bg:#0d1220;--panel:#151c2e;--panel2:#1d2640;--txt:#e8ecf6;--mut:#8f9bb8;--acc:#4fd1c5;--warn:#f6ad55;--bad:#fc6d6d;--good:#68d391}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;overflow:hidden;-webkit-user-select:none;user-select:none}
+#app{display:flex;flex-direction:column;height:100%;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+header{display:flex;align-items:center;gap:8px;padding:8px 12px;background:#0a0f1b;border-bottom:1px solid #222c45;flex-wrap:wrap}
+.brand{font-weight:800;font-size:17px;margin-right:auto;letter-spacing:.2px}
+.stat{background:var(--panel2);padding:5px 10px;border-radius:999px;font-size:14px;font-weight:700;white-space:nowrap}
+header button{background:var(--panel2);color:var(--txt);border:0;border-radius:999px;width:34px;height:34px;font-size:16px;cursor:pointer}
+main{flex:1;display:flex;min-height:0}
+#boardWrap{flex:1;position:relative;display:flex;align-items:center;justify-content:center;min-width:0;min-height:0;padding:8px}
+canvas{touch-action:none;border-radius:10px;box-shadow:0 10px 40px rgba(0,0,0,.5)}
+#banner{position:absolute;top:14px;left:50%;transform:translateX(-50%);background:rgba(10,15,27,.85);border:1px solid #2b3656;padding:6px 14px;border-radius:999px;font-weight:700;font-size:14px;pointer-events:none;white-space:nowrap;max-width:94%;overflow:hidden;text-overflow:ellipsis}
+#banner.alert{border-color:var(--bad);color:#ffd0d0}
+#toast{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);background:#2a1f12;border:1px solid var(--warn);color:#ffe2bd;padding:7px 14px;border-radius:10px;font-size:14px;opacity:0;transition:opacity .25s;pointer-events:none;max-width:90%;text-align:center}
+#toast.show{opacity:1}
+aside{width:320px;background:var(--panel);border-left:1px solid #222c45;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px;-webkit-overflow-scrolling:touch}
+@media (max-aspect-ratio:1/1){main{flex-direction:column}aside{width:auto;border-left:0;border-top:1px solid #222c45;max-height:44%}}
+h3{margin:0;font-size:15px;color:var(--mut);text-transform:uppercase;letter-spacing:.8px}
+.card{background:var(--panel2);border-radius:12px;padding:10px 12px;font-size:14px;line-height:1.35}
+.card b{color:#fff}
+.shop{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.item{background:#232e4d;border:2px solid transparent;color:var(--txt);border-radius:10px;padding:7px 6px;text-align:left;cursor:pointer;font-size:12.5px;line-height:1.2;touch-action:manipulation}
+.item .ic{font-size:20px;display:block}
+.item .pr{color:var(--warn);font-weight:700}
+.item.sel{border-color:var(--acc);background:#1f3a4a}
+.item.dis{opacity:.45}
+.btn{display:block;width:100%;border:0;border-radius:12px;padding:12px;font-size:16px;font-weight:800;cursor:pointer;color:#0b1020;background:var(--acc);touch-action:manipulation}
+.btn.sec{background:#2b3656;color:var(--txt)}
+.btn.red{background:var(--bad);color:#1a0505}
+.btn.blue{background:#63b3ed}
+.btn:disabled{opacity:.4;cursor:default}
+#goNight{position:sticky;bottom:0;box-shadow:0 -6px 16px var(--panel)}
+.row{display:flex;gap:6px}
+.row .btn{flex:1;padding:10px 6px;font-size:14px}
+#log{font-size:13px;line-height:1.4;display:flex;flex-direction:column;gap:3px}
+#log div{background:#1a2238;border-radius:7px;padding:4px 8px}
+#log .t{color:var(--mut);font-variant-numeric:tabular-nums;margin-right:6px}
+.pips{display:flex;gap:4px;flex-wrap:wrap}
+.pip{width:16px;height:16px;border-radius:4px;background:#f6e05e;box-shadow:0 0 6px #f6e05e88}
+.pip.off{background:#2b3656;box-shadow:none}
+.mut{color:var(--mut);font-size:13px}
+#modal{position:fixed;inset:0;background:rgba(3,6,14,.72);display:flex;align-items:center;justify-content:center;z-index:10;padding:16px}
+#modal.hidden{display:none}
+#modalCard{background:var(--panel);border:1px solid #2b3656;border-radius:16px;max-width:560px;width:100%;max-height:92%;overflow-y:auto;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+#modalCard h2{margin:0 0 8px;font-size:22px}
+#modalCard p,#modalCard li{font-size:15px;line-height:1.45}
+#modalCard ul{padding-left:20px;margin:6px 0}
+.big{font-size:44px;text-align:center;margin:4px 0}
+.kv{display:flex;justify-content:space-between;border-bottom:1px solid #26304d;padding:5px 0;font-size:15px}
+.good{color:var(--good)}.bad{color:var(--bad)}.warn{color:var(--warn)}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="brand">🏠 La casa inteligente</div>
+    <div class="stat" id="hNight">Noche 1/5</div>
+    <div class="stat" id="hMoney">$0</div>
+    <div class="stat" id="hScore">★ 0</div>
+    <button id="btnSound" title="Sonido">🔊</button>
+    <button id="btnHelp" title="Cómo jugar">?</button>
+  </header>
+  <main>
+    <div id="boardWrap"><canvas id="board"></canvas><div id="banner"></div><div id="toast"></div></div>
+    <aside id="panel"></aside>
+  </main>
+</div>
+<div id="modal" class="hidden"><div id="modalCard"></div></div>
+<script>
+'use strict';
+/* ====================== DATOS ====================== */
+const W = 22, H = 16, NIGHTS = 5;
+const MAP = [
+"......................",
+".####W########W#####..",
+".#sssssss#rrrrrrrrr#..",
+".#sssssss#rrrrrrrrr#..",
+".Wsssssss#rrrrrrrrrW..",
+".#sssssss#rrrrrrrrr#..",
+".#sssssss#rrrrrrrrr#..",
+".####d########d#####..",
+".Dhhhhhhhhhhhhhhhhh#..",
+".###d######d#####d##..",
+".#kkkkkk#eeeee#gggg#..",
+".Wkkkkkk#eeeee#ggggW..",
+".#kkkkkk#eeeee#gggg#M.",
+".#kkkkkk#eeeee#gggg#..",
+".###D######W###GGGG#..",
+",,,,,,,,,,,,,,,,,,,,,,"];
+const ROOMS = {s:'Sala', r:'Recámara', h:'Pasillo', k:'Cocina', e:'Estudio', g:'Cochera'};
+const ROOM_COL = {s:'#c8a27a', r:'#9db1d4', h:'#b9b2a6', k:'#dcd6c8', e:'#a98f6b', g:'#7f858f'};
+const ENTRY_DEFS = [
+  {id:'pp',  name:'Puerta principal',          kind:'door',   tiles:[[1,8]]},
+  {id:'pc',  name:'Puerta de la cocina',       kind:'door',   tiles:[[4,14]]},
+  {id:'vsn', name:'Ventana de la sala (norte)',kind:'window', tiles:[[5,1]]},
+  {id:'vso', name:'Ventana de la sala (oeste)',kind:'window', tiles:[[1,4]]},
+  {id:'vrn', name:'Ventana de la recámara (norte)', kind:'window', tiles:[[14,1]]},
+  {id:'vre', name:'Ventana de la recámara (este)',  kind:'window', tiles:[[19,4]]},
+  {id:'vco', name:'Ventana de la cocina',      kind:'window', tiles:[[1,11]]},
+  {id:'ves', name:'Ventana del estudio',       kind:'window', tiles:[[11,14]]},
+  {id:'vcg', name:'Ventana de la cochera',     kind:'window', tiles:[[19,11]]},
+  {id:'gar', name:'Portón de la cochera',      kind:'garage', tiles:[[15,14],[16,14],[17,14],[18,14]]},
+];
+const PICK_BASE = {door:4, window:3, garage:5};
+const SMART_EXTRA = 5;
+const SAFE = {x:9, y:10, value:5000};
+const METER = {x:20, y:12};
+const ITEMS = [
+  {id:'tv',     name:'Pantalla', icon:'📺', x:3,  y:3,  value:800},
+  {id:'joyas',  name:'Joyas',    icon:'💍', x:17, y:3,  value:1500},
+  {id:'laptop', name:'Laptop',   icon:'💻', x:13, y:12, value:1000},
+];
+// Tabla de dispositivos. "producto" queda listo para mapear a SKUs reales más adelante.
+const DEVICES = {
+  cam:     {name:'Cámara Wi-Fi',          icon:'📷', price:300, producto:null, desc:'Ve un cono de 6 casillas. Tócala otra vez para girarla. Va dentro o en el jardín. Necesita luz eléctrica.'},
+  pir:     {name:'Sensor de movimiento',  icon:'📡', price:150, producto:null, desc:'Detecta movimiento a 3 casillas dentro de su cuarto. Necesita luz eléctrica.'},
+  contact: {name:'Sensor puerta/ventana', icon:'🧲', price:80,  producto:null, desc:'Avisa cuando abren o cruzan esa puerta o ventana. Funciona con pila.'},
+  lock:    {name:'Cerradura inteligente', icon:'🔒', price:250, producto:null, desc:'+5 turnos para forzarla, avisa del forcejeo y la cierras a distancia (1⚡). Desde dentro también lo frena.'},
+  light:   {name:'Foco inteligente',      icon:'💡', price:100, producto:null, desc:'Ilumina el cuarto entero (en el jardín, un radio de 3). Prenderlo cuesta 1⚡: si está ahí lo ves y se asusta.'},
+  emerg:   {name:'Luz de emergencia',     icon:'🔦', price:150, producto:null, desc:'Se prende sola si cortan la luz: ilumina su cuarto y asusta.'},
+  siren:   {name:'Sirena',                icon:'🚨', price:350, producto:null, desc:'Actívala (2⚡) para asustarlo mucho. Funciona con pila. Solo una.'},
+};
+const HUB = {name:'Hub con batería', icon:'🔋', price:400, desc:'Cámaras, sensores y control remoto de cerraduras siguen funcionando si cortan la luz.'};
+const PROFILES = [
+  {name:'El Novato',        emoji:'🧢', desc:'Entra por lo más fácil y cercano. No conoce tu casa.', pickMul:1,   crack:8, brave:50,  police:14, cut:0,   memory:false, scout:false, avoidLight:0, greedy:true},
+  {name:'El Observador',    emoji:'🕶️', desc:'Recuerda lo que vio anoche: evita donde lo descubriste y las cámaras que vio.', pickMul:1, crack:7, brave:60, police:15, cut:0, memory:true, scout:true, avoidLight:1, greedy:true},
+  {name:'El Electricista',  emoji:'🔧', desc:'Corta la luz en el medidor antes de entrar. Las cámaras y focos se apagan.', pickMul:1, crack:7, brave:70, police:16, cut:1, memory:true, scout:true, avoidLight:1, greedy:true},
+  {name:'La Sombra',        emoji:'🌑', desc:'Evita las zonas iluminadas y abre cerraduras más rápido. A veces corta la luz.', pickMul:.75, crack:6, brave:80, police:17, cut:.5, memory:true, scout:true, avoidLight:6, greedy:true},
+  {name:'El Profesional',   emoji:'🎩', desc:'Todo lo anterior, no se asusta fácil y va directo a la caja fuerte.', pickMul:.7, crack:6, brave:95, police:18, cut:1, memory:true, scout:true, avoidLight:6, greedy:false},
+];
+const ENERGY = [8, 8, 9, 9, 10];
+const DIRS4 = [[1,0],[-1,0],[0,1],[0,-1]];
+const DIR_NAMES = ['→','↘','↓','↙','←','↖','↑','↗'];
+
+/* ====================== MAPA ====================== */
+const T = [];
+for (let y=0;y<H;y++) for (let x=0;x<W;x++){
+  const ch = MAP[y][x]; const t = {x,y,ch,type:'floor',room:null,inside:false,entry:null};
+  if ('.,M'.includes(ch)) { t.type='yard'; t.walk = ch===','; t.meter = ch==='M'; }
+  else if (ch==='#') t.type='wall';
+  else if (ch==='d') { t.type='floor'; t.inside=true; t.doorway=true; }
+  else if ('DWG'.includes(ch)) { t.type='entry'; t.inside=true; }
+  else { t.type='floor'; t.room=ch; t.inside=true; }
+  T.push(t);
+}
+const tile = (x,y)=> (x<0||y<0||x>=W||y>=H) ? null : T[y*W+x];
+for (const e of ENTRY_DEFS) for (const [x,y] of e.tiles) tile(x,y).entry = e.id;
+tile(SAFE.x,SAFE.y).safe = true;
+const ENTRY_BY_ID = Object.fromEntries(ENTRY_DEFS.map(e=>[e.id,e]));
+const ROOM_CENTER = {};
+for (const r in ROOMS){ const ts=T.filter(t=>t.room===r); ROOM_CENTER[r]={x:ts.reduce((a,t)=>a+t.x,0)/ts.length, y:ts.reduce((a,t)=>a+t.y,0)/ts.length}; }
+const isBorder = (x,y)=> x===0||y===0||x===W-1||y===H-1;
+
+/* ====================== ESTADO ====================== */
+let S = null, N = null;
+let rng = Math.random;
+function newCampaign(){
+  S = {night:1, money:1200, score:0, phase:'plan', devices:[], nextId:1, hub:false, tool:null,
+       memory:{danger:{}, knownSmart:{}, knownCams:[], lightShy:false}, history:[]};
+}
+function save(){ try{ const c={...S}; delete c.tool; localStorage.setItem('casaInteligente_v1', JSON.stringify(c)); }catch(e){} }
+function loadSaved(){ try{ const j=localStorage.getItem('casaInteligente_v1'); return j?JSON.parse(j):null; }catch(e){ return null; } }
+const fmt = n => '$' + Math.round(n).toLocaleString('es-MX');
+const roomOf = (x,y)=> { const t=tile(x,y); return t && t.room; };
+const placeName = (x,y)=> { const t=tile(x,y); if(!t) return ''; if(t.room) return ROOMS[t.room]; if(t.entry) return ENTRY_BY_ID[t.entry].name; if(t.doorway) return 'una puerta interior'; return 'el jardín'; };
+
+/* ====================== SONIDO ====================== */
+let AC = null, soundOn = true;
+function ac(){ if(!soundOn) return null; if(!AC){ try{ AC = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ return null; } } if(AC.state==='suspended') AC.resume(); return AC; }
+function tone(f, dur, type='sine', vol=.07, f2=null, delay=0){
+  const a=ac(); if(!a) return; const t0=a.currentTime+delay; const o=a.createOscillator(), g=a.createGain();
+  o.type=type; o.frequency.setValueAtTime(f,t0); if(f2) o.frequency.exponentialRampToValueAtTime(f2,t0+dur);
+  g.gain.setValueAtTime(vol,t0); g.gain.exponentialRampToValueAtTime(.0001,t0+dur); o.connect(g); g.connect(a.destination); o.start(t0); o.stop(t0+dur+.02);
+}
+function noise(dur=.25, vol=.12, hp=2500){
+  const a=ac(); if(!a) return; const b=a.createBuffer(1, a.sampleRate*dur, a.sampleRate); const d=b.getChannelData(0);
+  for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,2);
+  const s=a.createBufferSource(); s.buffer=b; const f=a.createBiquadFilter(); f.type='highpass'; f.frequency.value=hp; const g=a.createGain(); g.gain.value=vol;
+  s.connect(f); f.connect(g); g.connect(a.destination); s.start();
+}
+const SFX = {
+  click(){ tone(620,.05,'square',.025); },
+  ping(){ tone(880,.1,'sine',.07); tone(1320,.14,'sine',.05,null,.08); },
+  tick(){ tone(90,.04,'sine',.03); },
+  glass(){ noise(.35,.18,3000); },
+  thud(){ tone(110,.18,'triangle',.12,60); },
+  creak(){ tone(210,.35,'triangle',.035,150); },
+  siren(){ for(let i=0;i<3;i++){ tone(600,.35,'sawtooth',.05,1100,i*.7); tone(1100,.35,'sawtooth',.05,600,i*.7+.35);} },
+  police(){ for(let i=0;i<4;i++){ tone(760,.25,'square',.035,null,i*.5); tone(980,.25,'square',.035,null,i*.5+.25);} },
+  power(){ tone(160,.7,'sawtooth',.08,40); },
+  light(){ tone(1400,.06,'sine',.05); },
+  win(){ [523,659,784,1046].forEach((f,i)=>tone(f,.25,'triangle',.08,null,i*.12)); },
+  lose(){ [392,330,262,196].forEach((f,i)=>tone(f,.3,'triangle',.08,null,i*.16)); },
+};
+
+/* ====================== DISPOSITIVOS ====================== */
+const devAt = (x,y)=> S.devices.find(d=>d.x===x&&d.y===y&&d.type!=='lock'&&d.type!=='contact');
+const entryHas = (id,type)=> S.devices.some(d=>d.entryId===id&&d.type===type);
+function canPlace(type,x,y){
+  const t=tile(x,y); if(!t) return 'Fuera del mapa';
+  const D=DEVICES[type];
+  if (S.money < D.price) return 'No te alcanza el dinero';
+  if (type==='lock'||type==='contact'){
+    if (t.type!=='entry') return 'Va en una puerta o ventana exterior';
+    if (entryHas(t.entry,type)) return 'Esa entrada ya tiene uno';
+    return '';
+  }
+  if (devAt(x,y)) return 'Ya hay algo ahí';
+  if (t.safe || ITEMS.some(i=>i.x===x&&i.y===y) || t.meter) return 'Ese lugar está ocupado';
+  if (type==='cam') return (t.type==='floor'||t.type==='yard') ? '' : 'La cámara va en el piso o en el jardín';
+  if (type==='light'){
+    if (t.type==='yard') return S.devices.filter(d=>d.type==='light'&&tile(d.x,d.y).type==='yard').length>=3 ? 'Máximo 3 reflectores en el jardín' : '';
+    if (!t.room) return 'Va dentro de un cuarto';
+    return S.devices.some(d=>d.type==='light'&&roomOf(d.x,d.y)===t.room) ? 'Ese cuarto ya tiene foco' : '';
+  }
+  if (!t.room) return 'Va dentro de un cuarto';
+  if (type==='emerg' && S.devices.some(d=>d.type==='emerg'&&roomOf(d.x,d.y)===t.room)) return 'Ese cuarto ya tiene luz de emergencia';
+  if (type==='siren' && S.devices.some(d=>d.type==='siren')) return 'Solo una sirena';
+  if (type==='pir' && S.devices.some(d=>d.type==='pir'&&roomOf(d.x,d.y)===t.room)) return 'Ese cuarto ya tiene sensor';
+  return '';
+}
+function place(type,x,y,dir){
+  const r=canPlace(type,x,y); if(r){ toast(r); return false; }
+  const t=tile(x,y); const D=DEVICES[type];
+  const d={id:S.nextId++, type, x, y, dir: dir!=null?dir:defaultDir(x,y), on:false, bought:S.night};
+  if (type==='lock'||type==='contact'){ d.entryId=t.entry; const e=ENTRY_BY_ID[t.entry]; d.x=e.tiles[0][0]; d.y=e.tiles[0][1]; }
+  S.devices.push(d); S.money-=D.price; SFX.click(); return true;
+}
+function defaultDir(x,y){ // apuntar hacia el centro de la casa
+  const a=Math.atan2(8-y, 10-x); return ((Math.round(a/(Math.PI/4))%8)+8)%8;
+}
+function sellAt(x,y){
+  const t=tile(x,y); let d=devAt(x,y);
+  if(!d && t && t.entry){ d=S.devices.find(q=>q.entryId===t.entry&&q.type==='lock') || S.devices.find(q=>q.entryId===t.entry&&q.type==='contact'); }
+  if(!d){ toast('No hay nada que vender ahí'); return; }
+  const refund = d.bought===S.night ? DEVICES[d.type].price : Math.round(DEVICES[d.type].price*.5);
+  S.devices=S.devices.filter(q=>q!==d); S.money+=refund; toast(`Vendiste ${DEVICES[d.type].name} por ${fmt(refund)}`); SFX.click();
+}
+
+/* ====================== VISIÓN ====================== */
+function opaque(x,y){ const t=tile(x,y); if(!t) return true; if(t.type==='wall') return true; if(t.type==='entry'){ const st = N ? N.ent[t.entry] : null; return !st || st.locked; } return false; }
+function los(x0,y0,x1,y1){
+  let dx=Math.abs(x1-x0), dy=Math.abs(y1-y0), sx=x0<x1?1:-1, sy=y0<y1?1:-1, err=dx-dy, x=x0, y=y0;
+  while(!(x===x1&&y===y1)){ const e2=2*err; if(e2>-dy){err-=dy;x+=sx;} if(e2<dx){err+=dx;y+=sy;} if(x===x1&&y===y1) break; if(opaque(x,y)) return false; }
+  return true;
+}
+function camSees(c,x,y,range=6){
+  const dx=x-c.x, dy=y-c.y; const d=Math.hypot(dx,dy); if(d===0) return true; if(d>range+.01) return false;
+  const a=Math.atan2(dy,dx), ca=c.dir*Math.PI/4; let diff=Math.abs(a-ca); if(diff>Math.PI) diff=2*Math.PI-diff;
+  if(diff>Math.PI/4+.02) return false; return los(c.x,c.y,x,y);
+}
+function camTiles(c){ const out=[]; for(const t of T){ if(t.type==='wall') continue; if(camSees(c,t.x,t.y)) out.push(t.y*W+t.x); } return out; }
+function pirSees(p,x,y){ const t=tile(x,y); const pr=roomOf(p.x,p.y); if(Math.hypot(x-p.x,y-p.y)>3.01) return false; if(t.room!==pr && !t.doorway) return false; return los(p.x,p.y,x,y); }
+
+/* ====================== NOCHE ====================== */
+function startNight(){
+  const base = PROFILES[S.night-1]; const P = {...base};
+  if (S.memory.lightShy) P.avoidLight = Math.max(P.avoidLight, 2);
+  const ent = {};
+  for (const e of ENTRY_DEFS) ent[e.id] = {id:e.id, name:e.name, kind:e.kind, tiles:e.tiles, locked:true, forced:false, smart:entryHas(e.id,'lock'), contact:entryHas(e.id,'contact')};
+  const jitter={}; for(const e of ENTRY_DEFS) jitter[e.id]=Math.floor(rng()*(S.night===1?6:4));
+  const starts = T.filter(t=>t.type==='yard'&&isBorder(t.x,t.y));
+  const st = starts[Math.floor(rng()*starts.length)];
+  N = { tick:0, energy:ENERGY[S.night-1], maxEnergy:ENERGY[S.night-1], power:true, profile:P, ent, jitter,
+        planCut: rng() < P.cut, cutDone:false, policeEta:null, sirenUntil:-1, sirenUses:0,
+        b:{x:st.x,y:st.y,state:'approach',fear:0,loot:[],hasSafe:false,pick:null,crack:0,cut:0,running:false,done:null,trail:[[st.x,st.y]],wasLit:false,moved:false},
+        visible:false, lastSeen:null, alert:null, detections:[], noises:[], log:[], discovered:{}, seenCams:{}, lightHits:[], taken:{}, entryUsed:null,
+        camPen:new Float32Array(W*H), litRooms:new Set(), litTiles:new Uint8Array(W*H), cover:new Uint8Array(W*H), paused:false, speed:1, over:false, flash:0 };
+  for (const d of S.devices) d.on=false;
+  if (P.memory) for (const kc of S.memory.knownCams) for (const i of camTiles(kc)) N.camPen[i]+=3;
+  computeLight(); computeCover();
+  S.phase='night';
+  log(`🌙 Empieza la noche ${S.night}. ${P.emoji} ${P.name} anda cerca...`);
+  renderPanel(); hud(); schedule();
+}
+function computeLight(){
+  N.litRooms=new Set(); N.litTiles.fill(0);
+  for (const d of S.devices){
+    if (d.type==='light' && d.on && N.power){ const t=tile(d.x,d.y); if(t.room) N.litRooms.add(t.room); else for(const q of T) if(q.type!=='wall'&&Math.hypot(q.x-d.x,q.y-d.y)<=3) N.litTiles[q.y*W+q.x]=1; }
+    if (d.type==='emerg' && !N.power) N.litRooms.add(roomOf(d.x,d.y));
+  }
+}
+const isLit=(x,y)=>{ const t=tile(x,y); return (t.room && N.litRooms.has(t.room)) || N.litTiles[y*W+x]===1; };
+const powered=d=> (d.type==='cam'||d.type==='pir') ? (N.power||S.hub) : true;
+function computeCover(){ N.cover.fill(0); for(const d of S.devices) if(d.type==='cam'&&powered(d)) for(const i of camTiles(d)) N.cover[i]=1; }
+
+function log(msg){ N.log.unshift({t:N.tick,msg}); if(N.log.length>40) N.log.pop(); }
+function spend(n){ if(N.energy<n){ toast('No te alcanza la energía ⚡'); return false; } N.energy-=n; return true; }
+
+function basePick(e){ return PICK_BASE[e.kind]; }
+function realPick(e){ return Math.ceil((basePick(e)+(e.smart?SMART_EXTRA:0))*N.profile.pickMul); }
+function knowsSmart(e){ return e.smart && (N.profile.scout || S.memory.knownSmart[e.id] || N.discovered[e.id]); }
+function believedPick(e){ return Math.ceil((basePick(e)+(knowsSmart(e)?SMART_EXTRA:0))*N.profile.pickMul); }
+function exitTime(e){ return e.smart?4:1; }
+
+function stepCost(fx,fy,tx,ty){
+  const t=tile(tx,ty); if(t.type==='wall'||t.safe) return Infinity;
+  const from=tile(fx,fy), P=N.profile; let c=1;
+  if (t.type==='entry'){
+    if (from.type==='entry') return Infinity;
+    const e=N.ent[t.entry];
+    if (e.locked) c += from.inside ? exitTime(e) : believedPick(e);
+    if (!from.inside){ c += N.jitter[e.id]; if(P.memory) c += (S.memory.danger[e.id]||0)*3; }
+  }
+  if (P.avoidLight && isLit(tx,ty)) c += P.avoidLight;
+  c += N.camPen[ty*W+tx];
+  return c;
+}
+function pathTo(sx,sy,isGoal){
+  if (isGoal(sx,sy)) return [];
+  const n=W*H, dist=new Float64Array(n).fill(Infinity), prev=new Int32Array(n).fill(-1), done=new Uint8Array(n);
+  dist[sy*W+sx]=0;
+  for(;;){
+    let u=-1,best=Infinity; for(let i=0;i<n;i++) if(!done[i]&&dist[i]<best){best=dist[i];u=i;}
+    if(u<0) return null; done[u]=1; const ux=u%W, uy=(u/W)|0;
+    if(isGoal(ux,uy)){ const p=[]; let c=u; while(c!==sy*W+sx){ p.push({x:c%W,y:(c/W)|0}); c=prev[c]; } return p.reverse(); }
+    for(const [dx,dy] of DIRS4){ const vx=ux+dx, vy=uy+dy; if(vx<0||vy<0||vx>=W||vy>=H) continue; const v=vy*W+vx; if(done[v]) continue;
+      const c=stepCost(ux,uy,vx,vy); if(c===Infinity) continue; if(best+c<dist[v]){ dist[v]=best+c; prev[v]=u; } }
+  }
+}
+const adjSafe=(x,y)=> Math.abs(x-SAFE.x)+Math.abs(y-SAFE.y)===1 && tile(x,y).type==='floor';
+const exitGoal=(x,y)=> isBorder(x,y) && tile(x,y).type==='yard';
+
+function alertAt(msg){ N.alert = N.alert || msg; }
+function addNoise(x,y,msg,snd){ const jx=x+Math.round((rng()-.5)*3), jy=y+Math.round((rng()-.5)*3); N.noises.push({x:jx,y:jy,t:N.tick}); log(msg); if(snd) snd(); }
+function startRun(why){
+  const b=N.b; b.running=true; b.state=b.hasSafe?'escape':'flee'; b.pick=null; b.grabbing=null;
+  if(why==='fear') log(N.visible?'😱 ¡Se asustó y va a huir!':'👂 Se oyen pasos corriendo...');
+  if(why==='patrol') log('🚓 El ladrón oyó las patrullas: intenta escapar');
+  if(why==='loot') log(N.visible?'💰 ¡Abrió la caja fuerte! Va hacia la salida':'💰 Algo pesado se movió en el estudio...');
+}
+function cutPower(){
+  N.power=false; N.cutDone=true; N.flash=1; SFX.power();
+  log(S.hub ? '⚡ ¡Cortaron la luz! El hub con batería mantiene cámaras y sensores' : '⚡ ¡Cortaron la luz! Cámaras, sensores y focos apagados');
+  computeLight(); computeCover();
+  const em=S.devices.filter(d=>d.type==='emerg'); if(em.length) log(`🔦 ${em.length} luz(es) de emergencia encendida(s)`);
+  if(isLit(N.b.x,N.b.y)) N.b.fear+=20;
+}
+function nearItem(b){
+  for(const it of ITEMS){ if(N.taken[it.id]) continue; if(Math.abs(it.x-b.x)+Math.abs(it.y-b.y)>4) continue; if(roomOf(it.x,it.y)!==roomOf(b.x,b.y)) continue; return it; }
+  return null;
+}
+
+function burglarAct(){
+  const b=N.b, P=N.profile; if(b.done) return;
+  b.moved=false;
+  if(!b.running){
+    if(N.policeEta!=null && N.tick>=N.policeEta-5) startRun('patrol');
+    else if(b.fear>=P.brave) startRun('fear');
+  }
+  if(b.state==='cutting'){ if(++b.cut>=3) { cutPower(); b.state='infil'; } return; }
+  if(b.state==='crack'){
+    if(++b.crack>=P.crack){ b.hasSafe=true; startRun('loot'); }
+    return;
+  }
+  if(b.grabbing){ const it=b.grabbing; N.taken[it.id]=true; b.loot.push(it); b.grabbing=null; log(N.visible?`🫳 Se llevó: ${it.icon} ${it.name}`:`🔊 Ruido en ${ROOMS[roomOf(it.x,it.y)]}...`); return; }
+  if(b.pick){
+    const e=N.ent[b.pick.id];
+    if(!e.locked){ b.pick=null; }
+    else {
+      b.pick.prog++;
+      if(e.smart && !b.pick.exit) alertAt(`🔒 Forcejeo en ${e.name}`);
+      if(e.smart && !b.pick.exit && !b.pick.knew && b.pick.prog>=basePick(e)+1){ N.discovered[e.id]=true; b.pick=null; return; }
+      if(b.pick.prog>=b.pick.need){
+        e.locked=false; e.forced=true; const ex=b.pick.exit; b.pick=null;
+        if(!ex){ if(e.kind==='window') addNoise(e.tiles[0][0],e.tiles[0][1],'🔊 Ruido de vidrio cerca de '+e.name.replace('Ventana','la ventana'),SFX.glass); else addNoise(e.tiles[0][0],e.tiles[0][1],'🔊 Un golpe seco afuera...',SFX.thud); }
+        if(e.contact) alertAt(`🧲 Se abrió: ${e.name}`);
+        computeCover();
+      }
+      return;
+    }
+  }
+  let goal=null;
+  if(b.state==='approach'){
+    if(N.planCut && !N.cutDone){
+      if(b.x===METER.x&&b.y===METER.y){ b.state='cutting'; b.cut=0; addNoise(METER.x,METER.y,'🔊 Algo suena junto al medidor de luz...'); return; }
+      goal=(x,y)=>x===METER.x&&y===METER.y;
+    } else b.state='infil';
+  }
+  if(b.state==='infil'){
+    if(adjSafe(b.x,b.y)){ b.state='crack'; return; }
+    goal=adjSafe;
+    if(P.greedy && b.fear<P.brave*.5 && tile(b.x,b.y).inside){
+      const it=nearItem(b);
+      if(it){ if(it.x===b.x&&it.y===b.y){ b.grabbing=it; return; } goal=(x,y)=>x===it.x&&y===it.y; }
+    }
+  }
+  if(b.running) goal=exitGoal;
+  const path=pathTo(b.x,b.y,goal); if(!path||!path.length) return;
+  const nx=path[0], t=tile(nx.x,nx.y);
+  if(t.type==='entry' && N.ent[t.entry].locked){
+    const e=N.ent[t.entry]; const exit=tile(b.x,b.y).inside;
+    b.pick={id:e.id, prog:0, need: exit?exitTime(e):realPick(e), exit, knew: exit || !e.smart || knowsSmart(e)};
+    return;
+  }
+  const from=tile(b.x,b.y);
+  b.x=nx.x; b.y=nx.y; b.moved=true; b.trail.push([b.x,b.y]);
+  if(t.type==='entry'){
+    const e=N.ent[t.entry];
+    if(!from.inside && !N.entryUsed) N.entryUsed=e.id;
+    if(e.contact) alertAt(`🧲 Cruzaron: ${e.name}`);
+  }
+  if(b.running && exitGoal(b.x,b.y)) b.done='gone';
+  else if(t.type==='floor' && rng()<.09) addNoise(b.x,b.y,`🔊 Un crujido en ${placeName(b.x,b.y)}...`,SFX.creak);
+}
+
+function detect(){
+  const b=N.b; const src=[];
+  if(!b.done){
+    for(const d of S.devices){
+      if(d.type==='cam' && powered(d) && camSees(d,b.x,b.y)) src.push('📷 Cámara');
+      if(d.type==='pir' && powered(d) && b.moved && pirSees(d,b.x,b.y)) src.push('📡 Sensor');
+      if(d.type==='cam' && Math.hypot(d.x-b.x,d.y-b.y)<=5 && los(b.x,b.y,d.x,d.y)){ const k=d.x+','+d.y+','+d.dir; if(!N.seenCams[k]){ N.seenCams[k]={x:d.x,y:d.y,dir:d.dir}; if(N.profile.memory) for(const i of camTiles(d)) N.camPen[i]+=2; } }
+    }
+    if(isLit(b.x,b.y)) src.push('💡 Luz');
+    if(N.alert) src.push(N.alert);
+  }
+  const was=N.visible;
+  N.visible = src.length>0;
+  if(N.visible){
+    const alertNew = N.alert && (N.alert!==N.lastAlert || N.tick-N.lastAlertT>5);
+    if(N.alert){ if(alertNew){ N.lastAlert=N.alert; N.lastAlertT=N.tick; } }
+    if(!was || alertNew){ log(`👁️ ${src[src.length-1].startsWith('🔒')||src[src.length-1].startsWith('🧲')?src[src.length-1]:'Detectado por '+[...new Set(src)].join(' + ')} · ${placeName(b.x,b.y)}`); SFX.ping(); }
+    N.lastSeen={x:b.x,y:b.y,tick:N.tick}; N.detections.push({x:b.x,y:b.y,t:N.tick});
+  }
+  N.alert=null;
+}
+function fearUpdate(){
+  const b=N.b; if(b.done) return;
+  const lit=isLit(b.x,b.y);
+  if(lit && !b.wasLit){ b.fear+=12; }
+  if(lit) b.fear+=2;
+  b.wasLit=lit;
+  if(N.tick<=N.sirenUntil) b.fear+=5;
+  b.fear=Math.max(0,b.fear-1);
+}
+function step(){
+  if(!N || N.over) return;
+  N.tick++;
+  computeLight();
+  burglarAct();
+  computeLight();
+  fearUpdate();
+  detect();
+  N.noises=N.noises.filter(n=>N.tick-n.t<6);
+  if(N.policeEta!=null && N.tick===N.policeEta-5) SFX.police();
+  if(N.policeEta!=null && N.tick>=N.policeEta && !N.b.done){ N.b.done='caught'; log('🚓 ¡Llegó la policía y lo atrapó!'); }
+  if(N.b.done){ endNight(N.b.done==='caught'?'caught':(N.b.hasSafe?'robbed':'scared')); return; }
+  if(N.tick>=150){ endNight('dawn'); return; }
+  hud(); renderNightPanel();
+}
+let timer=null;
+function schedule(){ clearTimeout(timer); if(!N||N.over||N.paused||S.phase!=='night'||window.__manual) return; timer=setTimeout(()=>{ step(); schedule(); }, N.speed===2?330:700); }
+
+/* acciones del jugador */
+function actToggleLight(d){
+  if(!N.power){ toast('Sin luz eléctrica: el foco no prende'); return; }
+  if(d.on){ d.on=false; computeLight(); renderNightPanel(); return; }
+  if(!spend(1)) return;
+  d.on=true; computeLight(); SFX.light();
+  const b=N.b, where=tile(d.x,d.y).room?ROOMS[tile(d.x,d.y).room]:'el jardín';
+  if(!b.done && isLit(b.x,b.y)){ b.fear+=25; b.wasLit=true; N.lightHits.push(where); alertAt('💡 ¡Lo encendiste encima!'); detect(); log(`💡 ¡Lo sorprendiste en ${where}! Se asustó`); }
+  else log(`💡 Prendiste ${where}: no hay nadie`);
+  hud(); renderNightPanel();
+}
+function actLock(e){
+  if(!e.smart){ toast('Esa entrada no tiene cerradura inteligente'); return; }
+  if(e.locked){ toast(e.name+' ya está cerrada'); return; }
+  if(!N.power && !S.hub){ toast('Sin luz: no hay control remoto (compra el hub con batería)'); return; }
+  if(e.tiles.some(([x,y])=>N.b.x===x&&N.b.y===y)){ toast('¡Está parado en la entrada! No cierra'); return; }
+  if(!spend(1)) return;
+  e.locked=true; SFX.click(); log(`🔒 Cerraste a distancia: ${e.name}`); computeCover();
+  if(Math.abs(N.b.x-e.tiles[0][0])+Math.abs(N.b.y-e.tiles[0][1])<=2) N.b.fear+=8;
+  hud(); renderNightPanel();
+}
+function actSiren(){
+  if(!S.devices.some(d=>d.type==='siren')){ toast('No tienes sirena'); return; }
+  if(!spend(2)) return;
+  N.sirenUntil=N.tick+8; N.b.fear += N.sirenUses? 20 : 40; N.sirenUses++; N.flash=1; SFX.siren(); log('🚨 ¡Sirena activada!');
+  hud(); renderNightPanel();
+}
+const hasEvidence=()=> N.lastSeen && N.tick-N.lastSeen.tick<=6;
+function actPolice(){
+  if(N.policeEta!=null){ toast('La policía ya viene en camino'); return; }
+  if(!hasEvidence()){ toast('Necesitas haberlo detectado hace poco para llamar'); return; }
+  if(!spend(3)) return;
+  N.policeEta=N.tick+N.profile.police; SFX.click(); log(`📞 Llamaste a la policía: llega en ${N.profile.police} turnos`);
+  hud(); renderNightPanel();
+}
+
+/* ====================== FIN DE NOCHE ====================== */
+function endNight(kind){
+  N.over=true; clearTimeout(timer); S.phase='result';
+  const b=N.b, P=N.profile, M=S.memory;
+  const small=b.loot.reduce((a,i)=>a+i.value,0);
+  let money=500, pts=0, title='', big='';
+  if(kind==='caught'){ money+=1200; pts=1000; title='¡Lo atrapó la policía!'; big='🚓'; SFX.win(); }
+  else if(kind==='scared'){ money+=600; pts=500; title='¡Huyó asustado!'; big='🏃'; SFX.win(); }
+  else if(kind==='dawn'){ money+=600; pts=400; title='Amaneció y se fue sin nada'; big='🌅'; SFX.win(); }
+  else { money-=600; pts=-400; title='Te robaron la caja fuerte'; big='💸'; SFX.lose(); }
+  const won = kind!=='robbed';
+  if(won) pts += N.energy*40;
+  pts -= Math.round(small/10);
+  const deductible = Math.round(small*.3);
+  money -= deductible;
+  S.money=Math.max(0,S.money+money); S.score+=pts;
+  // aprendizaje del ladrón
+  const lessons=[];
+  for(const k in M.danger) M.danger[k]*=.6;
+  if(N.entryUsed){
+    const e=N.ent[N.entryUsed]; const [ex,ey]=e.tiles[0];
+    const det=N.detections.some(d=>Math.abs(d.x-ex)+Math.abs(d.y-ey)<=5);
+    if(det||won){ M.danger[e.id]=(M.danger[e.id]||0)+2; lessons.push(`Entró por <b>${e.name}</b> y le fue mal: la evitará.`); }
+    else lessons.push(`Entró por <b>${e.name}</b> sin problema: probablemente repita.`);
+  }
+  for(const e of Object.values(N.ent)){
+    if(!e.smart || M.knownSmart[e.id]) continue;
+    const near=b.trail.some(([x,y])=>Math.abs(x-e.tiles[0][0])+Math.abs(y-e.tiles[0][1])<=4);
+    if(near||N.discovered[e.id]||P.scout){ M.knownSmart[e.id]=true; lessons.push(`Ya sabe que <b>${e.name}</b> tiene cerradura inteligente.`); }
+  }
+  const seen=Object.values(N.seenCams);
+  if(seen.length){ const keys=new Set(M.knownCams.map(c=>c.x+','+c.y+','+c.dir)); for(const c of seen) if(!keys.has(c.x+','+c.y+','+c.dir)) M.knownCams.push(c); M.knownCams=M.knownCams.slice(-6);
+    lessons.push(`Vio ${seen.length} cámara(s). Si las mueves o las giras, lo confundes.`); }
+  if(N.lightHits.length){ M.lightShy=true; lessons.push(`Le prendiste la luz encima: ahora evitará zonas iluminadas.`); }
+  if(N.planCut) lessons.push(S.hub?'Cortó la luz, pero tu hub con batería aguantó.':'Cortar la luz le funcionó… o no. Piensa en luces de emergencia y el hub.');
+  if(!lessons.length) lessons.push('No aprendió mucho esta noche.');
+  const entryName = N.entryUsed ? N.ent[N.entryUsed].name : 'no logró entrar';
+  S.history.push({night:S.night, kind, pts, entry:entryName, loot:small+(b.hasSafe?SAFE.value:0)});
+  const last = S.night>=NIGHTS;
+  hud(); renderPanel();
+  showModal(`
+    <div class="big">${big}</div><h2 style="text-align:center">${title}</h2>
+    <p class="mut" style="text-align:center">Noche ${S.night} · ${P.emoji} ${P.name} · ${N.tick} turnos</p>
+    <div class="kv"><span>Entró por</span><b>${entryName}</b></div>
+    <div class="kv"><span>Se llevó</span><b class="${(small||b.hasSafe)?'bad':'good'}">${b.hasSafe?'💰 Caja fuerte ':''}${b.loot.map(i=>i.icon+' '+i.name).join(', ')||(b.hasSafe?'':'Nada')}</b></div>
+    <div class="kv"><span>Dinero de la noche</span><b class="${money>=0?'good':'bad'}">${money>=0?'+':''}${fmt(money)}</b></div>
+    <div class="kv"><span>Puntos</span><b class="${pts>=0?'good':'bad'}">${pts>=0?'+':''}${pts}</b></div>
+    <h3 style="margin-top:14px">Lo que aprendió el ladrón</h3>
+    <ul>${lessons.map(l=>'<li>'+l+'</li>').join('')}</ul>
+    <p class="mut">En el mapa ves el camino que siguió (línea roja).</p>
+    <button class="btn" id="mNext">${last?'Ver resultado final':'Preparar la noche '+(S.night+1)}</button>`);
+  document.getElementById('mNext').onclick=()=>{ hideModal(); if(last) finalScreen(); else { S.night++; S.phase='plan'; N=null; save(); hud(); renderPanel(); nightIntro(); } };
+}
+function finalScreen(){
+  S.phase='end'; localStorage.removeItem('casaInteligente_v1');
+  const wins=S.history.filter(h=>h.kind!=='robbed').length;
+  const stars = S.score>=4500?'⭐⭐⭐':S.score>=2500?'⭐⭐':S.score>0?'⭐':'—';
+  showModal(`<div class="big">${stars}</div><h2 style="text-align:center">Campaña terminada</h2>
+    <p style="text-align:center">Defendiste la casa <b>${wins} de ${NIGHTS}</b> noches · <b>${S.score}</b> puntos</p>
+    ${S.history.map(h=>`<div class="kv"><span>Noche ${h.night} · ${h.entry}</span><b class="${h.kind==='robbed'?'bad':'good'}">${({caught:'Atrapado',scared:'Ahuyentado',dawn:'Amaneció',robbed:'Robo'})[h.kind]} (${h.pts>=0?'+':''}${h.pts})</b></div>`).join('')}
+    <p class="mut">Tu kit final: ${summarizeKit()}</p>
+    <button class="btn" id="mAgain">Jugar otra vez</button>`);
+  document.getElementById('mAgain').onclick=()=>{ hideModal(); newCampaign(); hud(); renderPanel(); nightIntro(); };
+}
+function summarizeKit(){ const c={}; for(const d of S.devices) c[d.type]=(c[d.type]||0)+1; const parts=Object.entries(c).map(([k,v])=>`${v}× ${DEVICES[k].icon} ${DEVICES[k].name}`); if(S.hub) parts.push('🔋 Hub con batería'); return parts.join(', ')||'nada'; }
+
+/* ====================== UI ====================== */
+const $=id=>document.getElementById(id);
+const panel=$('panel');
+function hud(){
+  $('hNight').textContent=`Noche ${S.night}/${NIGHTS}`;
+  $('hMoney').textContent=fmt(S.money);
+  $('hScore').textContent=`★ ${S.score}`;
+  const bn=$('banner'); bn.className='';
+  if(S.phase==='plan'){ bn.textContent=`📐 Planeación · Ladrón: ${PROFILES[S.night-1].emoji} ${PROFILES[S.night-1].name}`; }
+  else if(N){
+    let s=`⏱ Turno ${N.tick}`; if(!N.power) s+=' · ⚡ SIN LUZ';
+    if(N.policeEta!=null){ s+=` · 🚓 llega en ${Math.max(0,N.policeEta-N.tick)}`; bn.className='alert'; }
+    if(N.paused) s+=' · ⏸ PAUSA';
+    if(S.phase==='result') s='Noche terminada';
+    bn.textContent=s;
+  }
+}
+let toastT=null;
+function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),2200); }
+function showModal(html){ $('modalCard').innerHTML=html; $('modal').classList.remove('hidden'); }
+function hideModal(){ $('modal').classList.add('hidden'); }
+function renderPanel(){ if(S.phase==='night') renderNightPanel(); else if(S.phase==='plan') renderPlanPanel(); else panel.innerHTML='<div class="card">Noche terminada. La línea roja muestra el camino del ladrón.</div>'+(N?'<h3>Bitácora</h3><div id="log">'+N.log.slice(0,12).map(l=>`<div><span class="t">${String(l.t).padStart(3,"0")}</span>${l.msg}</div>`).join('')+'</div>':''); }
+function renderPlanPanel(){
+  const P=PROFILES[S.night-1]; const tool=S.tool;
+  const counts={}; for(const d of S.devices) counts[d.type]=(counts[d.type]||0)+1;
+  let h=`<div class="card"><b>${P.emoji} Esta noche: ${P.name}</b><br><span class="mut">${P.desc}</span></div>`;
+  h+=`<h3>Tienda · ${fmt(S.money)}</h3><div class="shop">`;
+  for(const k in DEVICES){ const D=DEVICES[k]; h+=`<button class="item ${tool===k?'sel':''} ${S.money<D.price?'dis':''}" data-tool="${k}"><span class="ic">${D.icon}</span>${D.name}<br><span class="pr">${fmt(D.price)}</span> <span class="mut">${counts[k]?'· tienes '+counts[k]:''}</span></button>`; }
+  h+=`<button class="item ${tool==='sell'?'sel':''}" data-tool="sell"><span class="ic">🗑️</span>Vender<br><span class="mut">100% si es de hoy</span></button>`;
+  h+=`</div>`;
+  h+= S.hub ? `<div class="card">🔋 Ya tienes el <b>hub con batería</b>.</div>` : `<button class="item" id="buyHub" style="width:100%"><span class="ic">${HUB.icon}</span>${HUB.name} · <span class="pr">${fmt(HUB.price)}</span><br><span class="mut">${HUB.desc}</span></button>`;
+  const info = tool && tool!=='sell' ? DEVICES[tool].desc : tool==='sell' ? 'Toca un dispositivo para venderlo.' : 'Elige algo de la tienda y tócalo en el mapa. Toca una cámara ya puesta para girarla.';
+  h+=`<div class="card mut">${info}</div>`;
+  h+=`<button class="btn" id="goNight">🌙 Empezar la noche</button>`;
+  panel.innerHTML=h;
+  panel.querySelectorAll('[data-tool]').forEach(b=>b.onclick=()=>{ const t=b.dataset.tool; S.tool = S.tool===t?null:t; SFX.click(); renderPlanPanel(); });
+  if($('buyHub')) $('buyHub').onclick=()=>{ if(S.money<HUB.price) return toast('No te alcanza'); S.money-=HUB.price; S.hub=true; SFX.click(); hud(); renderPlanPanel(); };
+  $('goNight').onclick=()=>{ S.tool=null; ac(); startNight(); };
+}
+function renderNightPanel(){
+  if(!N) return;
+  const ev=hasEvidence(); const hasSiren=S.devices.some(d=>d.type==='siren');
+  let pips=''; for(let i=0;i<N.maxEnergy;i++) pips+=`<div class="pip ${i<N.energy?'':'off'}"></div>`;
+  let h=`<div class="card"><b>Energía ⚡ ${N.energy}</b><div class="pips" style="margin-top:6px">${pips}</div>
+    <div class="mut" style="margin-top:6px">${N.power?'💡 Luz eléctrica normal':'⚡ <b class="bad">Sin luz</b>'+(S.hub?' · hub en batería':'')}${N.policeEta!=null?` · 🚓 en ${Math.max(0,N.policeEta-N.tick)}`:''}</div></div>
+    <div class="row"><button class="btn red" id="aSiren" ${hasSiren&&N.energy>=2?'':'disabled'}>🚨 Sirena<br><small>2⚡</small></button>
+    <button class="btn blue" id="aPolice" ${ev&&N.policeEta==null&&N.energy>=3?'':'disabled'}>🚓 Policía<br><small>${N.policeEta!=null?'en camino':ev?'3⚡ · ¡lo viste!':'3⚡ · necesitas verlo'}</small></button></div>
+    <div class="row"><button class="btn sec" id="aPause">${N.paused?'▶️ Seguir':'⏸ Pausa'}</button><button class="btn sec" id="aSpeed">${N.speed===2?'🐢 Normal':'⏩ Rápido'}</button></div>
+    <div class="card mut">Toca un <b>cuarto con foco</b> para prenderlo (1⚡). Toca una <b>entrada con 🔒</b> abierta para cerrarla a distancia (1⚡).</div>
+    <h3>Bitácora</h3><div id="log">${N.log.slice(0,9).map(l=>`<div><span class="t">${String(l.t).padStart(3,'0')}</span>${l.msg}</div>`).join('')}</div>`;
+  panel.innerHTML=h;
+  $('aSiren').onclick=actSiren; $('aPolice').onclick=actPolice;
+  $('aPause').onclick=()=>{ N.paused=!N.paused; hud(); renderNightPanel(); schedule(); };
+  $('aSpeed').onclick=()=>{ N.speed=N.speed===2?1:2; renderNightPanel(); schedule(); };
+}
+function nightIntro(){
+  const P=PROFILES[S.night-1];
+  showModal(`<div class="big">${P.emoji}</div><h2 style="text-align:center">Noche ${S.night}: ${P.name}</h2>
+   <p style="text-align:center">${P.desc}</p>
+   <div class="kv"><span>Dinero para equipar</span><b>${fmt(S.money)}</b></div>
+   <div class="kv"><span>Energía de la noche</span><b>⚡ ${ENERGY[S.night-1]}</b></div>
+   <div class="kv"><span>La policía tarda</span><b>${P.police} turnos</b></div>
+   <div class="kv"><span>Abre la caja fuerte en</span><b>${P.crack} turnos</b></div>
+   ${S.night>1?'<p class="mut">Recuerda: el ladrón aprende de las noches anteriores.</p>':''}
+   <button class="btn" id="mGo">Equipar la casa</button>`);
+  $('mGo').onclick=()=>{ ac(); hideModal(); };
+}
+function tutorial(first){
+  const saved=first?loadSaved():null;
+  showModal(`<h2>🏠 La casa inteligente</h2>
+   <p>Cada noche un ladrón intenta abrir tu <b>caja fuerte 💰</b>. <b>No lo ves</b>: solo aparece cuando un dispositivo lo detecta.</p>
+   <ul>
+    <li><b>Planeación:</b> compra dispositivos y colócalos tocando el mapa. Toca una cámara puesta para girarla.</li>
+    <li><b>Noche:</b> el tiempo corre. Toca un cuarto para prender su foco (1⚡), cierra a distancia una 🔒 (1⚡), activa la sirena (2⚡) o llama a la policía (3⚡, solo si lo viste hace poco).</li>
+    <li><b>Ganas</b> si la policía lo atrapa o huye asustado. <b>Pierdes</b> si escapa con la caja fuerte.</li>
+    <li>El ladrón <b>aprende</b>: recuerda dónde lo descubriste, qué cámaras vio y qué cerraduras tienes.</li>
+   </ul>
+   <p class="mut">Cuando lo ves, la barrita 😨 muestra cuánto miedo tiene: si se llena, huye. Tip: la policía tarda; si cierras sus salidas a distancia, no alcanza a escapar.</p>
+   ${saved&&saved.night>1?`<button class="btn sec" id="mCont" style="margin-bottom:8px">Continuar campaña (noche ${saved.night})</button>`:''}
+   <button class="btn" id="mStart">${first?'Empezar campaña':'Entendido'}</button>`);
+  if($('mCont')) $('mCont').onclick=()=>{ S=Object.assign({tool:null},saved); S.phase='plan'; hideModal(); hud(); renderPanel(); nightIntro(); };
+  $('mStart').onclick=()=>{ ac(); hideModal(); if(first) nightIntro(); };
+}
+
+/* ====================== INPUT ====================== */
+const cv=$('board'); let TS=32, DPR=1;
+cv.addEventListener('pointerdown',ev=>{
+  ev.preventDefault(); const r=cv.getBoundingClientRect(); const x=Math.floor((ev.clientX-r.left)/TS), y=Math.floor((ev.clientY-r.top)/TS);
+  if(x<0||y<0||x>=W||y>=H) return; onTap(x,y);
+});
+function onTap(x,y){
+  const t=tile(x,y);
+  if(S.phase==='plan'){
+    const d=devAt(x,y);
+    if(S.tool==='sell'){ sellAt(x,y); }
+    else if(d && d.type==='cam'){ d.dir=(d.dir+1)%8; SFX.click(); }
+    else if(S.tool){ place(S.tool,x,y); }
+    else if(d){ toast(`${DEVICES[d.type].icon} ${DEVICES[d.type].name}`); }
+    else toast(placeName(x,y));
+    hud(); renderPlanPanel(); return;
+  }
+  if(S.phase!=='night'||!N||N.over) return;
+  if(t.entry){ actLock(N.ent[t.entry]); return; }
+  let light=null;
+  if(t.room) light=S.devices.find(d=>d.type==='light'&&roomOf(d.x,d.y)===t.room);
+  if(!light) light=S.devices.find(d=>d.type==='light'&&!tile(d.x,d.y).room&&Math.hypot(d.x-x,d.y-y)<=1.5);
+  if(light) actToggleLight(light);
+  else toast(t.room?`${ROOMS[t.room]} no tiene foco`:placeName(x,y));
+}
+$('btnHelp').onclick=()=>{ if(N&&!N.over){ N.paused=true; hud(); renderNightPanel(); } tutorial(false); };
+$('btnSound').onclick=()=>{ soundOn=!soundOn; $('btnSound').textContent=soundOn?'🔊':'🔇'; };
+window.addEventListener('keydown',e=>{ if(e.code==='Space'&&N&&S.phase==='night'){ N.paused=!N.paused; hud(); renderNightPanel(); schedule(); e.preventDefault(); } });
+
+/* ====================== DIBUJO ====================== */
+function resize(){
+  const wrap=$('boardWrap'); const aw=wrap.clientWidth-16, ah=wrap.clientHeight-16;
+  TS=Math.max(12,Math.floor(Math.min(aw/W, ah/H))); DPR=window.devicePixelRatio||1;
+  cv.style.width=TS*W+'px'; cv.style.height=TS*H+'px'; cv.width=TS*W*DPR; cv.height=TS*H*DPR;
+}
+window.addEventListener('resize',resize);
+function emoji(ctx,e,x,y,size,alpha=1){ ctx.globalAlpha=alpha; ctx.font=`${size}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(e,x,y); ctx.globalAlpha=1; }
+function draw(){
+  requestAnimationFrame(draw);
+  if(!S) return;
+  const ctx=cv.getContext('2d'); ctx.setTransform(DPR,0,0,DPR,0,0); const ts=TS; const now=performance.now()/1000;
+  const night = (S.phase==='night'||S.phase==='result') && N;
+  // base
+  for(const t of T){
+    const px=t.x*ts, py=t.y*ts; let c;
+    if(t.type==='yard') c = t.walk ? '#3b4150' : ((t.x+t.y)%2?'#2f6a43':'#316f46');
+    else if(t.type==='wall') c='#1c2130';
+    else if(t.type==='entry') c='#1c2130';
+    else if(t.doorway) c='#a0815c';
+    else { c=ROOM_COL[t.room]; if(t.room==='k' && (t.x+t.y)%2) c='#cfc8b8'; }
+    ctx.fillStyle=c; ctx.fillRect(px,py,ts,ts);
+    if(t.type==='floor' && !t.doorway && t.room!=='k'){ ctx.fillStyle='rgba(0,0,0,.05)'; ctx.fillRect(px,py+ts-1,ts,1); }
+    if(t.type==='wall'){ const dn=tile(t.x,t.y+1); if(!dn||dn.type!=='wall'){ ctx.fillStyle='#2c3348'; ctx.fillRect(px,py+ts*.75,ts,ts*.25);} }
+    if(t.type==='entry'){
+      const e=ENTRY_BY_ID[t.entry]; const st=night?N.ent[t.entry]:{locked:true,forced:false};
+      const open=!st.locked;
+      if(e.kind==='window'){ ctx.fillStyle=open?'#27324d':'#7cc4ff'; ctx.fillRect(px+ts*.1,py+ts*.3,ts*.8,ts*.4); if(open){ ctx.strokeStyle='#fc6d6d'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(px+ts*.2,py+ts*.3); ctx.lineTo(px+ts*.8,py+ts*.7); ctx.stroke(); } }
+      else if(e.kind==='door'){ ctx.fillStyle=open?'#3b2a18':'#8b5a2b'; ctx.fillRect(px+ts*.12,py+ts*.12,ts*.76,ts*.76); ctx.fillStyle='#f6e05e'; if(!open) ctx.fillRect(px+ts*.66,py+ts*.45,ts*.1,ts*.1); }
+      else { ctx.fillStyle=open?'#2a2f3a':'#9aa3ad'; ctx.fillRect(px+1,py+ts*.15,ts-2,ts*.7); ctx.fillStyle='rgba(0,0,0,.25)'; for(let i=1;i<4;i++) ctx.fillRect(px+1,py+ts*.15+i*ts*.17,ts-2,1.5); }
+    }
+  }
+  // labels, items, safe, meter
+  if(!night || S.phase==='result'){ ctx.fillStyle='rgba(0,0,0,.28)'; ctx.font=`600 ${Math.round(ts*.42)}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle'; for(const r in ROOMS) ctx.fillText(ROOMS[r].toUpperCase(),(ROOM_CENTER[r].x+.5)*ts,(ROOM_CENTER[r].y+.5)*ts); }
+  for(const it of ITEMS){ if(night && N.taken[it.id]) continue; emoji(ctx,it.icon,(it.x+.5)*ts,(it.y+.5)*ts,ts*.62); }
+  ctx.fillStyle='#4a5568'; ctx.fillRect(SAFE.x*ts+2,SAFE.y*ts+2,ts-4,ts-4); emoji(ctx,(night&&N.b.hasSafe)?'🕳️':'💰',(SAFE.x+.5)*ts,(SAFE.y+.5)*ts,ts*.7);
+  emoji(ctx,night&&!N.power?'🪫':'🔌',(METER.x+.5)*ts,(METER.y+.5)*ts,ts*.6);
+  // fog
+  if(night && S.phase==='night'){
+    for(const t of T){ const i=t.y*W+t.x; let a;
+      if(isLit(t.x,t.y)) { ctx.fillStyle='rgba(255,214,140,.10)'; ctx.fillRect(t.x*ts,t.y*ts,ts,ts); continue; }
+      if(N.cover[i]) { ctx.fillStyle='rgba(12,30,60,.42)'; ctx.fillRect(t.x*ts,t.y*ts,ts,ts); ctx.fillStyle='rgba(79,209,197,.07)'; ctx.fillRect(t.x*ts,t.y*ts,ts,ts); continue; }
+      a = N.power?.7:.82; ctx.fillStyle=`rgba(4,7,18,${a})`; ctx.fillRect(t.x*ts,t.y*ts,ts,ts);
+    }
+  } else if(S.phase==='result' && N){
+    ctx.fillStyle='rgba(4,7,18,.35)'; ctx.fillRect(0,0,W*ts,H*ts);
+  }
+  // cobertura en planeación
+  if(S.phase==='plan'){
+    for(const d of S.devices){
+      if(d.type==='cam'){ ctx.fillStyle='rgba(79,209,197,.22)'; for(const i of camTilesPlan(d)) ctx.fillRect((i%W)*ts,((i/W)|0)*ts,ts,ts); }
+      if(d.type==='pir'){ ctx.strokeStyle='rgba(246,173,85,.7)'; ctx.setLineDash([4,4]); ctx.beginPath(); ctx.arc((d.x+.5)*ts,(d.y+.5)*ts,3*ts,0,Math.PI*2); ctx.stroke(); ctx.setLineDash([]); }
+      if(d.type==='light' && !tile(d.x,d.y).room){ ctx.fillStyle='rgba(255,230,150,.12)'; ctx.beginPath(); ctx.arc((d.x+.5)*ts,(d.y+.5)*ts,3.4*ts,0,Math.PI*2); ctx.fill(); }
+    }
+    if(S.tool && S.tool!=='sell'){ for(const t of T){ if(!canPlace(S.tool,t.x,t.y)){ ctx.fillStyle='rgba(104,211,145,.28)'; ctx.fillRect(t.x*ts+ts*.38,t.y*ts+ts*.38,ts*.24,ts*.24); } } }
+  }
+  // dispositivos
+  for(const d of S.devices){
+    const cx=(d.x+.5)*ts, cy=(d.y+.5)*ts; const on = !night || powered(d);
+    if(d.type==='lock'||d.type==='contact'){
+      const st=night?N.ent[d.entryId]:null;
+      const ic = d.type==='lock' ? ((st&&!st.locked)?'🔓':'🔒') : '🧲';
+      const off = d.type==='lock'? -.28 : .28;
+      emoji(ctx,ic,cx+off*ts,cy-.28*ts,ts*.5);
+      continue;
+    }
+    let ic=DEVICES[d.type].icon, alpha=on?1:.35;
+    if(d.type==='light'){ const lit = night && d.on && N.power; if(lit){ ctx.fillStyle='rgba(255,220,120,.35)'; ctx.beginPath(); ctx.arc(cx,cy,ts*.6,0,Math.PI*2); ctx.fill(); } alpha = night ? (N.power?(d.on?1:.6):.25) : 1; }
+    if(d.type==='emerg'){ alpha = night ? (N.power?.6:1) : 1; if(night&&!N.power){ ctx.fillStyle='rgba(255,240,200,.35)'; ctx.beginPath(); ctx.arc(cx,cy,ts*.6,0,Math.PI*2); ctx.fill(); } }
+    if(d.type==='siren' && night && N.tick<=N.sirenUntil){ ctx.fillStyle=`rgba(252,80,80,${.3+.3*Math.sin(now*12)})`; ctx.beginPath(); ctx.arc(cx,cy,ts*.8,0,Math.PI*2); ctx.fill(); }
+    if(d.type==='cam'){ const a=d.dir*Math.PI/4; ctx.fillStyle=on?'#4fd1c5':'#555'; ctx.beginPath(); ctx.moveTo(cx+Math.cos(a)*ts*.55,cy+Math.sin(a)*ts*.55); ctx.lineTo(cx+Math.cos(a+2.4)*ts*.3,cy+Math.sin(a+2.4)*ts*.3); ctx.lineTo(cx+Math.cos(a-2.4)*ts*.3,cy+Math.sin(a-2.4)*ts*.3); ctx.fill(); }
+    emoji(ctx,ic,cx,cy,ts*.58,alpha);
+  }
+  if(night){
+    // ruidos
+    for(const n of N.noises){ const k=(N.tick-n.t+ (now%0.7))/6; ctx.strokeStyle=`rgba(246,173,85,${Math.max(0,.8-k)})`; ctx.lineWidth=2; ctx.beginPath(); ctx.arc((n.x+.5)*ts,(n.y+.5)*ts,ts*(.6+k*2.2),0,Math.PI*2); ctx.stroke(); }
+    const b=N.b;
+    if(S.phase==='result'){
+      ctx.strokeStyle='rgba(252,109,109,.85)'; ctx.lineWidth=Math.max(2,ts*.1); ctx.lineJoin='round'; ctx.beginPath(); b.trail.forEach(([x,y],i)=>{ const px=(x+.5)*ts, py=(y+.5)*ts; i?ctx.lineTo(px,py):ctx.moveTo(px,py); }); ctx.stroke();
+      emoji(ctx,'🥷',(b.x+.5)*ts,(b.y+.5)*ts,ts*.8);
+    } else if(N.visible && !b.done){
+      const p=.5+.5*Math.sin(now*8); ctx.strokeStyle=`rgba(252,109,109,${.5+.5*p})`; ctx.lineWidth=3; ctx.beginPath(); ctx.arc((b.x+.5)*ts,(b.y+.5)*ts,ts*(.55+.1*p),0,Math.PI*2); ctx.stroke();
+      emoji(ctx,'🥷',(b.x+.5)*ts,(b.y+.5)*ts,ts*.8);
+      { const fw=ts*1.1, fx=(b.x+.5)*ts-fw/2, fy=(b.y+1)*ts+2, fr=Math.min(1,b.fear/N.profile.brave); ctx.fillStyle='#000b'; ctx.fillRect(fx,fy,fw,ts*.16); ctx.fillStyle=fr>.7?'#f6ad55':'#63b3ed'; ctx.fillRect(fx,fy,fw*fr,ts*.16); emoji(ctx,'😨',fx-ts*.18,fy+ts*.08,ts*.3); }
+      if(b.state==='crack'){ const w=ts*1.6; ctx.fillStyle='#000a'; ctx.fillRect(SAFE.x*ts-w*.2,SAFE.y*ts-ts*.35,w,ts*.22); ctx.fillStyle='#fc6d6d'; ctx.fillRect(SAFE.x*ts-w*.2,SAFE.y*ts-ts*.35,w*b.crack/N.profile.crack,ts*.22); }
+    } else if(N.lastSeen && N.tick-N.lastSeen.tick<10){
+      emoji(ctx,'❓',(N.lastSeen.x+.5)*ts,(N.lastSeen.y+.5)*ts,ts*.6,1-(N.tick-N.lastSeen.tick)/10);
+    }
+    if(N.flash>0){ ctx.fillStyle=`rgba(255,255,255,${N.flash*.35})`; ctx.fillRect(0,0,W*ts,H*ts); N.flash=Math.max(0,N.flash-.04); }
+    if(S.phase==='night' && N.tick<=N.sirenUntil){ ctx.strokeStyle=`rgba(252,80,80,${.5+.5*Math.sin(now*10)})`; ctx.lineWidth=6; ctx.strokeRect(3,3,W*ts-6,H*ts-6); }
+  }
+}
+function camTilesPlan(c){ const keep=N; N=null; const r=camTiles(c); N=keep; return r; }
+
+/* ====================== ARRANQUE ====================== */
+newCampaign(); resize(); hud(); renderPanel(); requestAnimationFrame(draw); tutorial(true);
+window.CASA={ get S(){return S;}, get N(){return N;}, place, startNight, step, actToggleLight, actLock, actSiren, actPolice, newCampaign, tile, DEVICES, PROFILES, setRng:f=>{rng=f;} };
+</script>
+</body>
+</html>
